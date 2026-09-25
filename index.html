@@ -184,7 +184,16 @@
       <form id="roster-form" class="roster-add-form">
         <div>
           <label for="r-name">Name</label>
-          <input type="text" id="r-name" required>
+          <input type="text" id="r-name" list="name-suggestions" placeholder="Full name" required>
+          <datalist id="name-suggestions">
+            <option>Amy Flockton</option>
+            <option>Cassidy Jacques</option>
+            <option>Courtney McManus</option>
+            <option>Courtney Milo</option>
+            <option>Josie Jones</option>
+            <option>Julia Tanton</option>
+            <option>Lisa Newcity</option>
+          </datalist>
         </div>
         <div>
           <label for="r-role">Role</label>
