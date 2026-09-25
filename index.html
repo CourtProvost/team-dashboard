@@ -111,13 +111,13 @@
     </div>
     <div class="cycle-info" id="cycle-label">Loading...</div>
   </header>
-
+ 
   <section>
     <h2>Who's submitted</h2>
     <p class="section-sub">Badges reset each time a new meeting starts.</p>
     <div id="submission-status"><div class="empty-state">Loading...</div></div>
   </section>
-
+ 
   <section class="card">
     <h2>Add or update a project</h2>
     <form id="entry-form">
@@ -156,7 +156,7 @@
       </div>
     </form>
   </section>
-
+ 
   <section>
     <h2>Board</h2>
     <p class="section-sub" id="board-meta">Loading...</p>
@@ -166,17 +166,17 @@
       <div><div class="column-title blocked">Blocked</div><div id="col-blocked"></div></div>
     </div>
   </section>
-
+ 
   <section>
     <h2>Completed</h2>
     <div id="completed-list"><div class="empty-state">Loading...</div></div>
   </section>
-
+ 
   <section>
     <h2>Meeting history</h2>
     <div id="history-list"><div class="empty-state">Loading...</div></div>
   </section>
-
+ 
   <section>
     <details>
       <summary>Manage roster</summary>
@@ -211,7 +211,7 @@
     </details>
   </section>
 </div>
-
+ 
 <script>
   const STATUS_META = {
     'on-track': { label: 'On track', class: 'on-track' },
@@ -219,9 +219,9 @@
     'blocked': { label: 'Blocked', class: 'blocked' },
     'completed': { label: 'Completed', class: 'completed' }
   };
-
+ 
   const state = { roster: [], cycle: null, projects: [], archives: [] };
-
+ 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function slugify(name) { return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
   function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str == null ? '' : str; return div.innerHTML; }
@@ -236,14 +236,14 @@
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
-
+ 
   // --- API layer: every one of these talks to the Google Apps Script web app,
   // which is bound directly to the Google Sheet. Nothing here touches storage directly. ---
-
+ 
   // Paste the URL you get from Deploy > New deployment > Web app in the
   // Apps Script editor. It ends in /exec.
   const API_URL = 'https://script.google.com/macros/s/AKfycbz2JjONClT3t41p4_3DMvKTilFU4DE4ZBo3y7BXek2f6ugL1W1khBVbydZEzceTUKrs/exec';
-
+ 
   async function apiGet(resource) {
     const res = await fetch(API_URL + '?resource=' + encodeURIComponent(resource));
     if (!res.ok) throw new Error('Request failed: ' + resource);
@@ -251,7 +251,7 @@
     if (data && data.error) throw new Error(data.error);
     return data;
   }
-
+ 
   async function apiPost(resource, action, payload) {
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -264,7 +264,7 @@
     if (data && data.error) throw new Error(data.error);
     return data;
   }
-
+ 
   async function getRoster() {
     try {
       const roster = await apiGet('roster');
@@ -281,7 +281,7 @@
       return rows;
     } catch (e) { console.error(e); return []; }
   }
-
+ 
   function updateHistoryIfChanged(project) {
     if (!project.history) project.history = [];
     const last = project.history[project.history.length - 1];
@@ -289,11 +289,11 @@
       project.history.push({ date: new Date().toISOString(), status: project.status });
     }
   }
-
+ 
   function renderCycleHeader() {
     document.getElementById('cycle-label').textContent = state.cycle.label + ', started ' + formatDate(state.cycle.startedAt);
   }
-
+ 
   function renderRosterPanel() {
     const container = document.getElementById('submission-status');
     if (!state.roster.length) {
@@ -309,7 +309,7 @@
         '</span><span class="chip-role">' + escapeHtml(person.role) + '</span><span class="chip-badge">' + badge + '</span></div>';
     }).join('');
   }
-
+ 
   function renderProjectCard(p) {
     const meta = STATUS_META[p.status] || STATUS_META['on-track'];
     const detailHtml = p.detail ? '<div class="entry-detail"><strong>Needs:</strong> ' + escapeHtml(p.detail) + '</div>' : '';
@@ -322,7 +322,7 @@
       ? '<button class="ghost small" data-action="reopen" data-id="' + p.id + '">Reopen</button>'
       : '<button class="ghost small" data-action="complete" data-id="' + p.id + '">Mark completed</button>';
     const nameClass = p.status === 'completed' ? 'entry-name is-completed' : 'entry-name';
-
+ 
     return '<div class="entry-card ' + meta.class + '">' +
       '<div class="' + nameClass + '">' + escapeHtml(p.title) + '</div>' +
       '<div class="entry-role">' + escapeHtml(p.ownerName) + ', ' + escapeHtml(p.ownerRole) + '</div>' +
@@ -334,7 +334,7 @@
       '<div class="history-box" id="history-' + p.id + '" hidden>' +
       (historyItems || '<div class="empty-state">No history yet.</div>') + '</div></div>';
   }
-
+ 
   function renderBoard() {
     const groups = { 'on-track': [], 'needs-input': [], 'blocked': [] };
     state.projects.forEach(p => { if (p.status !== 'completed' && groups[p.status]) groups[p.status].push(p); });
@@ -348,13 +348,13 @@
     const completedCount = state.projects.filter(p => p.status === 'completed').length;
     document.getElementById('board-meta').textContent = activeCount + ' open, ' + completedCount + ' completed';
   }
-
+ 
   function renderCompleted() {
     const completed = state.projects.filter(p => p.status === 'completed');
     completed.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     document.getElementById('completed-list').innerHTML = completed.length ? completed.map(renderProjectCard).join('') : '<div class="empty-state">Nothing completed yet.</div>';
   }
-
+ 
   function renderHistory() {
     const el = document.getElementById('history-list');
     if (!state.archives.length) {
@@ -369,7 +369,7 @@
       return '<details><summary>' + escapeHtml(a.label) + ' - ' + formatDate(a.endedAt) + '</summary><div class="archive-body">' + rows + '</div></details>';
     }).join('');
   }
-
+ 
   function renderRosterManage() {
     const el = document.getElementById('roster-manage-list');
     el.innerHTML = state.roster.length
@@ -377,14 +377,14 @@
           '<button class="ghost small" data-action="remove-roster" data-id="' + r.id + '">Remove</button></div>').join('')
       : '<div class="empty-state">No one on the roster yet.</div>';
   }
-
+ 
   function populateOwnerSelect() {
     const sel = document.getElementById('f-owner');
     const current = sel.value;
     sel.innerHTML = '<option value="">Choose your name</option>' + state.roster.map(r => '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>').join('');
     if (state.roster.some(r => r.id === current)) sel.value = current;
   }
-
+ 
   function refreshProjectOptions(ownerId, selectId) {
     const projSelect = document.getElementById('f-project');
     if (!ownerId) { projSelect.innerHTML = '<option value="">New project</option>'; return; }
@@ -392,14 +392,14 @@
     projSelect.innerHTML = '<option value="">New project</option>' + ownerProjects.map(p => '<option value="' + p.id + '">' + escapeHtml(p.title) + '</option>').join('');
     if (selectId) projSelect.value = selectId;
   }
-
+ 
   function fillFieldsFromProject(project) {
     document.getElementById('f-title').value = project.title;
     document.getElementById('f-status').value = project.status;
     document.getElementById('f-detail').value = project.detail || '';
     document.getElementById('f-question').value = project.question || '';
   }
-
+ 
   function editProject(id) {
     const project = state.projects.find(p => p.id === id);
     if (!project) return;
@@ -408,12 +408,12 @@
     fillFieldsFromProject(project);
     document.getElementById('entry-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-
+ 
   function toggleHistory(id) {
     const box = document.getElementById('history-' + id);
     if (box) box.hidden = !box.hidden;
   }
-
+ 
   async function setProjectStatus(id, newStatus) {
     const project = state.projects.find(p => p.id === id);
     if (!project) return;
@@ -425,7 +425,7 @@
       await refreshAll();
     } catch (err) { console.error('Status update error:', err); }
   }
-
+ 
   async function removeRosterMember(id) {
     if (!confirm('Remove this person from the roster? Their existing project cards will stay on the board.')) return;
     try {
@@ -436,7 +436,7 @@
     renderRosterPanel();
     populateOwnerSelect();
   }
-
+ 
   async function refreshAll() {
     state.projects = await listProjects();
     state.archives = await listArchives();
@@ -445,7 +445,7 @@
     renderCompleted();
     renderHistory();
   }
-
+ 
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
@@ -457,7 +457,7 @@
     else if (action === 'toggle-history') toggleHistory(id);
     else if (action === 'remove-roster') removeRosterMember(id);
   });
-
+ 
   document.getElementById('f-owner').addEventListener('change', (e) => {
     refreshProjectOptions(e.target.value);
     document.getElementById('f-title').value = '';
@@ -465,7 +465,7 @@
     document.getElementById('f-detail').value = '';
     document.getElementById('f-question').value = '';
   });
-
+ 
   document.getElementById('f-project').addEventListener('change', (e) => {
     const id = e.target.value;
     if (!id) {
@@ -478,7 +478,7 @@
     const project = state.projects.find(p => p.id === id);
     if (project) fillFieldsFromProject(project);
   });
-
+ 
   document.getElementById('entry-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const saveMsg = document.getElementById('save-msg');
@@ -493,7 +493,7 @@
     const detail = document.getElementById('f-detail').value.trim();
     const question = document.getElementById('f-question').value.trim();
     if (!title) { saveMsg.textContent = 'Give the project a name.'; return; }
-
+ 
     saveBtn.disabled = true;
     saveMsg.textContent = 'Saving...';
     const existing = state.projects.find(p => p.id === projectId);
@@ -507,7 +507,7 @@
     project.question = question;
     updateHistoryIfChanged(project);
     project.updatedAt = new Date().toISOString();
-
+ 
     try {
       await apiPost('projects', 'save', project);
       saveMsg.textContent = 'Saved.';
@@ -525,7 +525,7 @@
     saveBtn.disabled = false;
     setTimeout(() => { saveMsg.textContent = ''; }, 4000);
   });
-
+ 
   document.getElementById('roster-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const nameInput = document.getElementById('r-name');
@@ -537,7 +537,7 @@
     if (!name || !role) return;
     const id = slugify(name);
     if (state.roster.some(r => r.id === id)) { alert('That name is already on the roster.'); return; }
-
+ 
     saveBtn.disabled = true;
     saveMsg.textContent = 'Saving...';
     try {
@@ -561,7 +561,7 @@
     populateOwnerSelect();
     setTimeout(() => { saveMsg.textContent = ''; }, 6000);
   });
-
+ 
   document.getElementById('new-meeting-btn').addEventListener('click', async () => {
     const defaultLabel = 'Meeting ' + new Date().toLocaleDateString();
     const label = prompt('Label for this meeting', defaultLabel);
@@ -576,7 +576,7 @@
     renderCycleHeader();
     await refreshAll();
   });
-
+ 
   async function init() {
     try {
       state.roster = await getRoster();
@@ -595,8 +595,9 @@
       document.getElementById('cycle-label').textContent = 'Could not load the dashboard. Check the API setup.';
     }
   }
-
+ 
   init();
 </script>
 </body>
 </html>
+ 
