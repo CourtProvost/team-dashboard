@@ -188,13 +188,13 @@
         </div>
         <div>
           <label for="r-role">Role</label>
-          <select id="r-role" required>
-            <option value="">Choose one</option>
+          <input type="text" id="r-role" list="role-suggestions" placeholder="Job title" required>
+          <datalist id="role-suggestions">
             <option>Administrative Assistant</option>
             <option>Executive Assistant</option>
             <option>Project Manager</option>
             <option>Communications Manager</option>
-          </select>
+          </datalist>
         </div>
         <div style="flex: 0;"><button type="submit">Add</button></div>
       </form>
@@ -232,7 +232,7 @@
 
   // Paste the URL you get from Deploy > New deployment > Web app in the
   // Apps Script editor. It ends in /exec.
-  const API_URL = 'https://script.google.com/a/macros/dartmouth.edu/s/AKfycbwJUh3oytUWNVDSM3Qg9fLDriuTuoLxnHpRmiOAWKxWymQ6q8yI1siLqIb1lJ2G_d3l/exec';
+  const API_URL = 'https://script.google.com/a/macros/dartmouth.edu/s/AKfycbylsc-vABdvKKtI5RvLgmjhcu1Q_iiqRpQ_mH0gb3TmnwzBMKaCFBoveQ-TBUayvjpL/exec';
 
   async function apiGet(resource) {
     const res = await fetch(API_URL + '?resource=' + encodeURIComponent(resource));
@@ -255,7 +255,13 @@
     return data;
   }
 
-  async function getRoster() { try { return await apiGet('roster'); } catch (e) { console.error(e); return []; } }
+  async function getRoster() {
+    try {
+      const roster = await apiGet('roster');
+      roster.sort((a, b) => a.name.localeCompare(b.name));
+      return roster;
+    } catch (e) { console.error(e); return []; }
+  }
   async function getCycle() { try { return await apiGet('cycle'); } catch (e) { console.error(e); return { label: 'Current meeting', startedAt: new Date().toISOString() }; } }
   async function listProjects() { try { return await apiGet('projects'); } catch (e) { console.error(e); return []; } }
   async function listArchives() {
