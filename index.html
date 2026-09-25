@@ -77,6 +77,10 @@
   .entry-name.is-completed { text-decoration: line-through; color: var(--ink-soft); }
   .entry-role { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
   .entry-detail, .entry-question { font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; }
+  .entry-collab { font-size: 12px; color: var(--ink-soft); font-style: italic; margin-bottom: 8px; }
+  .collab-checks { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .collab-check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); font-weight: 400; margin-bottom: 0; }
+  .collab-check input { width: auto; }
   .entry-detail strong, .entry-question strong { color: var(--ink); font-weight: 500; }
   .entry-updated { font-size: 11px; color: var(--ink-soft); margin-top: 8px; }
   .card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
@@ -149,6 +153,10 @@
       <div class="field-full">
         <label for="f-question">A question for the group (optional)</label>
         <textarea id="f-question" placeholder="Something you want input on"></textarea>
+      </div>
+      <div class="field-full">
+        <label>Working on this with (optional)</label>
+        <div id="f-collaborators" class="collab-checks"><div class="empty-state">Choose your name first.</div></div>
       </div>
       <div class="submit-row">
         <button type="submit" id="save-btn">Save card</button>
@@ -242,7 +250,7 @@
  
   // Paste the URL you get from Deploy > New deployment > Web app in the
   // Apps Script editor. It ends in /exec.
-  const API_URL = 'https://script.google.com/macros/s/AKfycbz2JjONClT3t41p4_3DMvKTilFU4DE4ZBo3y7BXek2f6ugL1W1khBVbydZEzceTUKrs/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyHr2LLlUSH-LewhCUNIIgOS3ORA9lFl02gmgTp1nbslOzTFx2hWlXySL0T9no6KkqU/exec';
  
   async function apiGet(resource) {
     const res = await fetch(API_URL + '?resource=' + encodeURIComponent(resource));
@@ -302,7 +310,10 @@
     }
     const cycleStart = new Date(state.cycle.startedAt).getTime();
     container.innerHTML = state.roster.map(person => {
-      const submitted = state.projects.some(p => p.ownerId === person.id && new Date(p.updatedAt).getTime() >= cycleStart);
+      const submitted = state.projects.some(p => {
+        if (new Date(p.updatedAt).getTime() < cycleStart) return false;
+        return p.ownerId === person.id || (p.collaboratorIds || []).includes(person.id);
+      });
       const cls = submitted ? 'submitted' : 'waiting';
       const badge = submitted ? 'Submitted' : 'No update yet';
       return '<div class="roster-chip ' + cls + '"><span class="chip-name">' + escapeHtml(person.name) +
@@ -312,6 +323,11 @@
  
   function renderProjectCard(p) {
     const meta = STATUS_META[p.status] || STATUS_META['on-track'];
+    const collabNames = (p.collaboratorIds || []).map(id => {
+      const person = state.roster.find(r => r.id === id);
+      return person ? person.name : null;
+    }).filter(Boolean);
+    const collabHtml = collabNames.length ? '<div class="entry-collab">With ' + collabNames.map(escapeHtml).join(', ') + '</div>' : '';
     const detailHtml = p.detail ? '<div class="entry-detail"><strong>Needs:</strong> ' + escapeHtml(p.detail) + '</div>' : '';
     const questionHtml = p.question ? '<div class="entry-question"><strong>Question:</strong> ' + escapeHtml(p.question) + '</div>' : '';
     const historyItems = (p.history || []).slice().reverse().map(h => {
@@ -326,7 +342,7 @@
     return '<div class="entry-card ' + meta.class + '">' +
       '<div class="' + nameClass + '">' + escapeHtml(p.title) + '</div>' +
       '<div class="entry-role">' + escapeHtml(p.ownerName) + ', ' + escapeHtml(p.ownerRole) + '</div>' +
-      detailHtml + questionHtml +
+      collabHtml + detailHtml + questionHtml +
       '<div class="entry-updated">' + timeAgo(p.updatedAt) + '</div>' +
       '<div class="card-actions">' +
       '<button class="ghost small" data-action="edit" data-id="' + p.id + '">Edit</button>' + actionBtn +
@@ -385,6 +401,23 @@
     if (state.roster.some(r => r.id === current)) sel.value = current;
   }
  
+  function renderCollaboratorChecks(selectedIds) {
+    const ownerId = document.getElementById('f-owner').value;
+    const container = document.getElementById('f-collaborators');
+    if (!ownerId) { container.innerHTML = '<div class="empty-state">Choose your name first.</div>'; return; }
+    const others = state.roster.filter(r => r.id !== ownerId);
+    if (!others.length) { container.innerHTML = '<div class="empty-state">No other teammates on the roster yet.</div>'; return; }
+    const selected = selectedIds || [];
+    container.innerHTML = others.map(r => {
+      const checked = selected.includes(r.id) ? 'checked' : '';
+      return '<label class="collab-check"><input type="checkbox" value="' + r.id + '" ' + checked + '> ' + escapeHtml(r.name) + '</label>';
+    }).join('');
+  }
+ 
+  function getSelectedCollaboratorIds() {
+    return Array.from(document.querySelectorAll('#f-collaborators input[type=checkbox]:checked')).map(cb => cb.value);
+  }
+ 
   function refreshProjectOptions(ownerId, selectId) {
     const projSelect = document.getElementById('f-project');
     if (!ownerId) { projSelect.innerHTML = '<option value="">New project</option>'; return; }
@@ -406,6 +439,7 @@
     document.getElementById('f-owner').value = project.ownerId;
     refreshProjectOptions(project.ownerId, project.id);
     fillFieldsFromProject(project);
+    renderCollaboratorChecks(project.collaboratorIds || []);
     document.getElementById('entry-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
  
@@ -464,6 +498,7 @@
     document.getElementById('f-status').value = 'on-track';
     document.getElementById('f-detail').value = '';
     document.getElementById('f-question').value = '';
+    renderCollaboratorChecks([]);
   });
  
   document.getElementById('f-project').addEventListener('change', (e) => {
@@ -473,10 +508,14 @@
       document.getElementById('f-status').value = 'on-track';
       document.getElementById('f-detail').value = '';
       document.getElementById('f-question').value = '';
+      renderCollaboratorChecks([]);
       return;
     }
     const project = state.projects.find(p => p.id === id);
-    if (project) fillFieldsFromProject(project);
+    if (project) {
+      fillFieldsFromProject(project);
+      renderCollaboratorChecks(project.collaboratorIds || []);
+    }
   });
  
   document.getElementById('entry-form').addEventListener('submit', async (e) => {
@@ -505,6 +544,7 @@
     project.status = status;
     project.detail = detail;
     project.question = question;
+    project.collaboratorIds = getSelectedCollaboratorIds();
     updateHistoryIfChanged(project);
     project.updatedAt = new Date().toISOString();
  
@@ -518,6 +558,7 @@
       document.getElementById('f-status').value = 'on-track';
       document.getElementById('f-detail').value = '';
       document.getElementById('f-question').value = '';
+      renderCollaboratorChecks([]);
     } catch (err) {
       saveMsg.textContent = 'Save failed. Try again.';
       console.error('Save error:', err);
