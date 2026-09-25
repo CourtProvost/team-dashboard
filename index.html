@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Provost's Office Team Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5EF;
+    --paper: #FFFFFF;
+    --ink: #1F231C;
+    --ink-soft: #5B5F55;
+    --green: #00693E;
+    --green-deep: #00442A;
+    --line: #DAD5C6;
+    --amber: #A6740C;
+    --rust: #A13E2B;
+    --slate: #6B6F63;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'IBM Plex Sans', sans-serif; line-height: 1.5; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 36px; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+  h1 { font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 32px; margin: 0 0 6px; color: var(--green-deep); }
+  header p.sub { margin: 0; color: var(--ink-soft); font-size: 15px; max-width: 60ch; }
+  .cycle-info { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+  h2 { font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 20px; margin: 0 0 6px; color: var(--ink); }
+  .section-sub { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; }
+  section { margin-bottom: 40px; }
+  section.card { background: var(--paper); border: 1px solid var(--line); border-radius: 3px; padding: 26px 28px; }
+  form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+  .field-full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; }
+  input, select, textarea {
+    width: 100%; font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink);
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--green); outline-offset: 1px; }
+  textarea { resize: vertical; min-height: 60px; }
+  .submit-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; margin-top: 4px; }
+  button {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; font-weight: 500; background: var(--green);
+    color: white; border: none; border-radius: 3px; padding: 11px 22px; cursor: pointer;
+  }
+  button:hover { background: var(--green-deep); }
+  button.ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+  button.ghost:hover { border-color: var(--ink-soft); color: var(--ink); }
+  button.small { padding: 5px 10px; font-size: 12px; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .status-msg { font-size: 14px; color: var(--green-deep); }
+  #submission-status { display: flex; flex-wrap: wrap; gap: 10px; }
+  .roster-chip {
+    display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 1px solid var(--line);
+    border-left: 3px solid var(--line); border-radius: 3px; background: var(--paper); min-width: 150px;
+  }
+  .roster-chip.submitted { border-left-color: var(--green); }
+  .roster-chip.waiting { border-left-color: var(--amber); }
+  .chip-name { font-weight: 600; font-size: 14px; }
+  .chip-role { font-size: 12px; color: var(--ink-soft); }
+  .chip-badge { font-size: 11px; margin-top: 4px; }
+  .roster-chip.submitted .chip-badge { color: var(--green-deep); }
+  .roster-chip.waiting .chip-badge { color: var(--amber); }
+  .columns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .column-title { font-size: 13px; font-weight: 600; color: var(--ink-soft); padding-bottom: 8px; border-bottom: 2px solid var(--line); margin-bottom: 14px; }
+  .column-title.on-track { border-color: var(--green); color: var(--green-deep); }
+  .column-title.needs-input { border-color: var(--amber); color: var(--amber); }
+  .column-title.blocked { border-color: var(--rust); color: var(--rust); }
+  .entry-card { background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 3px; padding: 14px 16px; margin-bottom: 12px; }
+  .entry-card.on-track { border-left-color: var(--green); }
+  .entry-card.needs-input { border-left-color: var(--amber); }
+  .entry-card.blocked { border-left-color: var(--rust); }
+  .entry-card.completed { border-left-color: var(--slate); }
+  .entry-name { font-weight: 600; font-size: 15px; }
+  .entry-name.is-completed { text-decoration: line-through; color: var(--ink-soft); }
+  .entry-role { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
+  .entry-detail, .entry-question { font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; }
+  .entry-detail strong, .entry-question strong { color: var(--ink); font-weight: 500; }
+  .entry-updated { font-size: 11px; color: var(--ink-soft); margin-top: 8px; }
+  .card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .history-box { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12px; color: var(--ink-soft); }
+  .history-row { padding: 2px 0; }
+  .empty-state { font-size: 13px; color: var(--ink-soft); font-style: italic; padding: 8px 0; }
+  #completed-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  details { border: 1px solid var(--line); border-radius: 3px; padding: 12px 16px; background: var(--paper); margin-bottom: 10px; }
+  summary { cursor: pointer; font-weight: 500; font-size: 14px; }
+  .archive-body { margin-top: 10px; font-size: 13px; color: var(--ink-soft); }
+  .archive-row { padding: 3px 0; }
+  .roster-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .roster-row:last-child { border-bottom: none; }
+  .roster-add-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-top: 14px; }
+  .roster-add-form > div { flex: 1; min-width: 140px; }
+  @media (max-width: 700px) {
+    form { grid-template-columns: 1fr; }
+    .columns { grid-template-columns: 1fr; }
+    #completed-list { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>Team dashboard</h1>
+        <p class="sub">Update your project cards before each meeting. The board shows where things stand for everyone in the room, and the history keeps a record over time. Data lives in the team's Google Sheet.</p>
+      </div>
+      <button id="new-meeting-btn">Start new meeting</button>
+    </div>
+    <div class="cycle-info" id="cycle-label">Loading...</div>
+  </header>
+
+  <section>
+    <h2>Who's submitted</h2>
+    <p class="section-sub">Badges reset each time a new meeting starts.</p>
+    <div id="submission-status"><div class="empty-state">Loading...</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Add or update a project</h2>
+    <form id="entry-form">
+      <div>
+        <label for="f-owner">Your name</label>
+        <select id="f-owner" required><option value="">Choose your name</option></select>
+      </div>
+      <div>
+        <label for="f-project">Project</label>
+        <select id="f-project"><option value="">New project</option></select>
+      </div>
+      <div class="field-full">
+        <label for="f-title">Project name</label>
+        <input type="text" id="f-title" placeholder="What is this project called" required>
+      </div>
+      <div>
+        <label for="f-status">Status</label>
+        <select id="f-status" required>
+          <option value="on-track">On track</option>
+          <option value="needs-input">Needs input</option>
+          <option value="blocked">Blocked</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div class="field-full">
+        <label for="f-detail">What's blocking you, or what you need from someone else (optional)</label>
+        <textarea id="f-detail" placeholder="Leave blank if nothing right now"></textarea>
+      </div>
+      <div class="field-full">
+        <label for="f-question">A question for the group (optional)</label>
+        <textarea id="f-question" placeholder="Something you want input on"></textarea>
+      </div>
+      <div class="submit-row">
+        <button type="submit" id="save-btn">Save card</button>
+        <span class="status-msg" id="save-msg"></span>
+      </div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Board</h2>
+    <p class="section-sub" id="board-meta">Loading...</p>
+    <div class="columns">
+      <div><div class="column-title on-track">On track</div><div id="col-on-track"></div></div>
+      <div><div class="column-title needs-input">Needs input</div><div id="col-needs-input"></div></div>
+      <div><div class="column-title blocked">Blocked</div><div id="col-blocked"></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Completed</h2>
+    <div id="completed-list"><div class="empty-state">Loading...</div></div>
+  </section>
+
+  <section>
+    <h2>Meeting history</h2>
+    <div id="history-list"><div class="empty-state">Loading...</div></div>
+  </section>
+
+  <section>
+    <details>
+      <summary>Manage roster</summary>
+      <div id="roster-manage-list"></div>
+      <form id="roster-form" class="roster-add-form">
+        <div>
+          <label for="r-name">Name</label>
+          <input type="text" id="r-name" required>
+        </div>
+        <div>
+          <label for="r-role">Role</label>
+          <select id="r-role" required>
+            <option value="">Choose one</option>
+            <option>Administrative Assistant</option>
+            <option>Executive Assistant</option>
+            <option>Project Manager</option>
+            <option>Communications Manager</option>
+          </select>
+        </div>
+        <div style="flex: 0;"><button type="submit">Add</button></div>
+      </form>
+    </details>
+  </section>
+</div>
+
+<script>
+  const STATUS_META = {
+    'on-track': { label: 'On track', class: 'on-track' },
+    'needs-input': { label: 'Needs input', class: 'needs-input' },
+    'blocked': { label: 'Blocked', class: 'blocked' },
+    'completed': { label: 'Completed', class: 'completed' }
+  };
+
+  const state = { roster: [], cycle: null, projects: [], archives: [] };
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function slugify(name) { return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+  function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str == null ? '' : str; return div.innerHTML; }
+  function timeAgo(iso) {
+    const then = new Date(iso);
+    const days = Math.floor((Date.now() - then.getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 0) return 'Updated today';
+    if (days === 1) return 'Updated yesterday';
+    return 'Updated ' + days + ' days ago';
+  }
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // --- API layer: every one of these talks to the Google Apps Script web app,
+  // which is bound directly to the Google Sheet. Nothing here touches storage directly. ---
+
+  // Paste the URL you get from Deploy > New deployment > Web app in the
+  // Apps Script editor. It ends in /exec.
+  const API_URL = 'https://script.google.com/a/macros/dartmouth.edu/s/AKfycbwJUh3oytUWNVDSM3Qg9fLDriuTuoLxnHpRmiOAWKxWymQ6q8yI1siLqIb1lJ2G_d3l/exec';
+
+  async function apiGet(resource) {
+    const res = await fetch(API_URL + '?resource=' + encodeURIComponent(resource));
+    if (!res.ok) throw new Error('Request failed: ' + resource);
+    const data = await res.json();
+    if (data && data.error) throw new Error(data.error);
+    return data;
+  }
+
+  async function apiPost(resource, action, payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      // text/plain avoids a CORS preflight request, which Apps Script web apps don't handle.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ resource, action, payload })
+    });
+    if (!res.ok) throw new Error('Request failed: ' + resource);
+    const data = await res.json();
+    if (data && data.error) throw new Error(data.error);
+    return data;
+  }
+
+  async function getRoster() { try { return await apiGet('roster'); } catch (e) { console.error(e); return []; } }
+  async function getCycle() { try { return await apiGet('cycle'); } catch (e) { console.error(e); return { label: 'Current meeting', startedAt: new Date().toISOString() }; } }
+  async function listProjects() { try { return await apiGet('projects'); } catch (e) { console.error(e); return []; } }
+  async function listArchives() {
+    try {
+      const rows = await apiGet('meetings');
+      rows.sort((a, b) => new Date(b.endedAt) - new Date(a.endedAt));
+      return rows;
+    } catch (e) { console.error(e); return []; }
+  }
+
+  function updateHistoryIfChanged(project) {
+    if (!project.history) project.history = [];
+    const last = project.history[project.history.length - 1];
+    if (!last || last.status !== project.status) {
+      project.history.push({ date: new Date().toISOString(), status: project.status });
+    }
+  }
+
+  function renderCycleHeader() {
+    document.getElementById('cycle-label').textContent = state.cycle.label + ', started ' + formatDate(state.cycle.startedAt);
+  }
+
+  function renderRosterPanel() {
+    const container = document.getElementById('submission-status');
+    if (!state.roster.length) {
+      container.innerHTML = '<div class="empty-state">Add your team below to track submissions.</div>';
+      return;
+    }
+    const cycleStart = new Date(state.cycle.startedAt).getTime();
+    container.innerHTML = state.roster.map(person => {
+      const submitted = state.projects.some(p => p.ownerId === person.id && new Date(p.updatedAt).getTime() >= cycleStart);
+      const cls = submitted ? 'submitted' : 'waiting';
+      const badge = submitted ? 'Submitted' : 'No update yet';
+      return '<div class="roster-chip ' + cls + '"><span class="chip-name">' + escapeHtml(person.name) +
+        '</span><span class="chip-role">' + escapeHtml(person.role) + '</span><span class="chip-badge">' + badge + '</span></div>';
+    }).join('');
+  }
+
+  function renderProjectCard(p) {
+    const meta = STATUS_META[p.status] || STATUS_META['on-track'];
+    const detailHtml = p.detail ? '<div class="entry-detail"><strong>Needs:</strong> ' + escapeHtml(p.detail) + '</div>' : '';
+    const questionHtml = p.question ? '<div class="entry-question"><strong>Question:</strong> ' + escapeHtml(p.question) + '</div>' : '';
+    const historyItems = (p.history || []).slice().reverse().map(h => {
+      const label = (STATUS_META[h.status] || {}).label || h.status;
+      return '<div class="history-row">' + escapeHtml(label) + ' - ' + formatDate(h.date) + '</div>';
+    }).join('');
+    const actionBtn = p.status === 'completed'
+      ? '<button class="ghost small" data-action="reopen" data-id="' + p.id + '">Reopen</button>'
+      : '<button class="ghost small" data-action="complete" data-id="' + p.id + '">Mark completed</button>';
+    const nameClass = p.status === 'completed' ? 'entry-name is-completed' : 'entry-name';
+
+    return '<div class="entry-card ' + meta.class + '">' +
+      '<div class="' + nameClass + '">' + escapeHtml(p.title) + '</div>' +
+      '<div class="entry-role">' + escapeHtml(p.ownerName) + ', ' + escapeHtml(p.ownerRole) + '</div>' +
+      detailHtml + questionHtml +
+      '<div class="entry-updated">' + timeAgo(p.updatedAt) + '</div>' +
+      '<div class="card-actions">' +
+      '<button class="ghost small" data-action="edit" data-id="' + p.id + '">Edit</button>' + actionBtn +
+      '<button class="ghost small" data-action="toggle-history" data-id="' + p.id + '">History</button></div>' +
+      '<div class="history-box" id="history-' + p.id + '" hidden>' +
+      (historyItems || '<div class="empty-state">No history yet.</div>') + '</div></div>';
+  }
+
+  function renderBoard() {
+    const groups = { 'on-track': [], 'needs-input': [], 'blocked': [] };
+    state.projects.forEach(p => { if (p.status !== 'completed' && groups[p.status]) groups[p.status].push(p); });
+    let activeCount = 0;
+    Object.keys(groups).forEach(status => {
+      groups[status].sort((a, b) => a.ownerName.localeCompare(b.ownerName));
+      activeCount += groups[status].length;
+      const el = document.getElementById('col-' + status);
+      el.innerHTML = groups[status].length ? groups[status].map(renderProjectCard).join('') : '<div class="empty-state">Nothing here right now.</div>';
+    });
+    const completedCount = state.projects.filter(p => p.status === 'completed').length;
+    document.getElementById('board-meta').textContent = activeCount + ' open, ' + completedCount + ' completed';
+  }
+
+  function renderCompleted() {
+    const completed = state.projects.filter(p => p.status === 'completed');
+    completed.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    document.getElementById('completed-list').innerHTML = completed.length ? completed.map(renderProjectCard).join('') : '<div class="empty-state">Nothing completed yet.</div>';
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('history-list');
+    if (!state.archives.length) {
+      el.innerHTML = '<div class="empty-state">No past meetings recorded yet. Use "Start new meeting" above when you begin one.</div>';
+      return;
+    }
+    el.innerHTML = state.archives.map(a => {
+      const rows = (a.snapshot || []).map(s => {
+        const label = (STATUS_META[s.status] || {}).label || s.status;
+        return '<div class="archive-row">' + escapeHtml(s.name) + ', ' + escapeHtml(s.title) + ': ' + escapeHtml(label) + '</div>';
+      }).join('') || '<div class="empty-state">No cards recorded.</div>';
+      return '<details><summary>' + escapeHtml(a.label) + ' - ' + formatDate(a.endedAt) + '</summary><div class="archive-body">' + rows + '</div></details>';
+    }).join('');
+  }
+
+  function renderRosterManage() {
+    const el = document.getElementById('roster-manage-list');
+    el.innerHTML = state.roster.length
+      ? state.roster.map(r => '<div class="roster-row"><span>' + escapeHtml(r.name) + ', ' + escapeHtml(r.role) + '</span>' +
+          '<button class="ghost small" data-action="remove-roster" data-id="' + r.id + '">Remove</button></div>').join('')
+      : '<div class="empty-state">No one on the roster yet.</div>';
+  }
+
+  function populateOwnerSelect() {
+    const sel = document.getElementById('f-owner');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Choose your name</option>' + state.roster.map(r => '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>').join('');
+    if (state.roster.some(r => r.id === current)) sel.value = current;
+  }
+
+  function refreshProjectOptions(ownerId, selectId) {
+    const projSelect = document.getElementById('f-project');
+    if (!ownerId) { projSelect.innerHTML = '<option value="">New project</option>'; return; }
+    const ownerProjects = state.projects.filter(p => p.ownerId === ownerId);
+    projSelect.innerHTML = '<option value="">New project</option>' + ownerProjects.map(p => '<option value="' + p.id + '">' + escapeHtml(p.title) + '</option>').join('');
+    if (selectId) projSelect.value = selectId;
+  }
+
+  function fillFieldsFromProject(project) {
+    document.getElementById('f-title').value = project.title;
+    document.getElementById('f-status').value = project.status;
+    document.getElementById('f-detail').value = project.detail || '';
+    document.getElementById('f-question').value = project.question || '';
+  }
+
+  function editProject(id) {
+    const project = state.projects.find(p => p.id === id);
+    if (!project) return;
+    document.getElementById('f-owner').value = project.ownerId;
+    refreshProjectOptions(project.ownerId, project.id);
+    fillFieldsFromProject(project);
+    document.getElementById('entry-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function toggleHistory(id) {
+    const box = document.getElementById('history-' + id);
+    if (box) box.hidden = !box.hidden;
+  }
+
+  async function setProjectStatus(id, newStatus) {
+    const project = state.projects.find(p => p.id === id);
+    if (!project) return;
+    const updated = Object.assign({}, project, { status: newStatus });
+    updateHistoryIfChanged(updated);
+    updated.updatedAt = new Date().toISOString();
+    try {
+      await apiPost('projects', 'save', updated);
+      await refreshAll();
+    } catch (err) { console.error('Status update error:', err); }
+  }
+
+  async function removeRosterMember(id) {
+    if (!confirm('Remove this person from the roster? Their existing project cards will stay on the board.')) return;
+    try {
+      await apiPost('roster', 'remove', { id });
+      state.roster = await getRoster();
+    } catch (err) { console.error('Roster remove error:', err); }
+    renderRosterManage();
+    renderRosterPanel();
+    populateOwnerSelect();
+  }
+
+  async function refreshAll() {
+    state.projects = await listProjects();
+    state.archives = await listArchives();
+    renderRosterPanel();
+    renderBoard();
+    renderCompleted();
+    renderHistory();
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    if (action === 'complete') setProjectStatus(id, 'completed');
+    else if (action === 'reopen') setProjectStatus(id, 'on-track');
+    else if (action === 'edit') editProject(id);
+    else if (action === 'toggle-history') toggleHistory(id);
+    else if (action === 'remove-roster') removeRosterMember(id);
+  });
+
+  document.getElementById('f-owner').addEventListener('change', (e) => {
+    refreshProjectOptions(e.target.value);
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-status').value = 'on-track';
+    document.getElementById('f-detail').value = '';
+    document.getElementById('f-question').value = '';
+  });
+
+  document.getElementById('f-project').addEventListener('change', (e) => {
+    const id = e.target.value;
+    if (!id) {
+      document.getElementById('f-title').value = '';
+      document.getElementById('f-status').value = 'on-track';
+      document.getElementById('f-detail').value = '';
+      document.getElementById('f-question').value = '';
+      return;
+    }
+    const project = state.projects.find(p => p.id === id);
+    if (project) fillFieldsFromProject(project);
+  });
+
+  document.getElementById('entry-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveMsg = document.getElementById('save-msg');
+    const saveBtn = document.getElementById('save-btn');
+    const ownerId = document.getElementById('f-owner').value;
+    if (!ownerId) { saveMsg.textContent = 'Choose your name first.'; return; }
+    const owner = state.roster.find(r => r.id === ownerId);
+    if (!owner) { saveMsg.textContent = 'That name is not on the roster.'; return; }
+    const projectId = document.getElementById('f-project').value || uid();
+    const title = document.getElementById('f-title').value.trim();
+    const status = document.getElementById('f-status').value;
+    const detail = document.getElementById('f-detail').value.trim();
+    const question = document.getElementById('f-question').value.trim();
+    if (!title) { saveMsg.textContent = 'Give the project a name.'; return; }
+
+    saveBtn.disabled = true;
+    saveMsg.textContent = 'Saving...';
+    const existing = state.projects.find(p => p.id === projectId);
+    const project = existing ? Object.assign({}, existing) : { id: projectId, history: [] };
+    project.ownerId = ownerId;
+    project.ownerName = owner.name;
+    project.ownerRole = owner.role;
+    project.title = title;
+    project.status = status;
+    project.detail = detail;
+    project.question = question;
+    updateHistoryIfChanged(project);
+    project.updatedAt = new Date().toISOString();
+
+    try {
+      await apiPost('projects', 'save', project);
+      saveMsg.textContent = 'Saved.';
+      await refreshAll();
+      refreshProjectOptions(ownerId);
+      document.getElementById('f-project').value = '';
+      document.getElementById('f-title').value = '';
+      document.getElementById('f-status').value = 'on-track';
+      document.getElementById('f-detail').value = '';
+      document.getElementById('f-question').value = '';
+    } catch (err) {
+      saveMsg.textContent = 'Save failed. Try again.';
+      console.error('Save error:', err);
+    }
+    saveBtn.disabled = false;
+    setTimeout(() => { saveMsg.textContent = ''; }, 4000);
+  });
+
+  document.getElementById('roster-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nameInput = document.getElementById('r-name');
+    const roleInput = document.getElementById('r-role');
+    const name = nameInput.value.trim();
+    const role = roleInput.value;
+    if (!name || !role) return;
+    const id = slugify(name);
+    if (state.roster.some(r => r.id === id)) { alert('That name is already on the roster.'); return; }
+    try {
+      await apiPost('roster', 'save', { id, name, role });
+      state.roster = await getRoster();
+    } catch (err) { console.error('Roster add error:', err); }
+    nameInput.value = '';
+    roleInput.value = '';
+    renderRosterManage();
+    renderRosterPanel();
+    populateOwnerSelect();
+  });
+
+  document.getElementById('new-meeting-btn').addEventListener('click', async () => {
+    const defaultLabel = 'Meeting ' + new Date().toLocaleDateString();
+    const label = prompt('Label for this meeting', defaultLabel);
+    if (label === null) return;
+    const now = new Date().toISOString();
+    const snapshot = state.projects.map(p => ({ name: p.ownerName, title: p.title, status: p.status }));
+    try {
+      await apiPost('meetings', 'save', { label: label || defaultLabel, startedAt: state.cycle.startedAt, endedAt: now, snapshot });
+      state.cycle = { label: label || defaultLabel, startedAt: now };
+      await apiPost('cycle', 'save', state.cycle);
+    } catch (err) { console.error('New meeting error:', err); }
+    renderCycleHeader();
+    await refreshAll();
+  });
+
+  async function init() {
+    try {
+      state.roster = await getRoster();
+      state.cycle = await getCycle();
+      state.projects = await listProjects();
+      state.archives = await listArchives();
+      populateOwnerSelect();
+      renderCycleHeader();
+      renderRosterPanel();
+      renderBoard();
+      renderCompleted();
+      renderHistory();
+      renderRosterManage();
+    } catch (err) {
+      console.error('Init error:', err);
+      document.getElementById('cycle-label').textContent = 'Could not load the dashboard. Check the API setup.';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
