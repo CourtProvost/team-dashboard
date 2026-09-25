@@ -48,7 +48,7 @@ Open `public/index.html` and find this line near the top of the script:
 
 ```js
 const API_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
-(https://script.google.com/a/macros/dartmouth.edu/s/AKfycbylsc-vABdvKKtI5RvLgmjhcu1Q_iiqRpQ_mH0gb3TmnwzBMKaCFBoveQ-TBUayvjpL/exec)
+('https://script.google.com/macros/s/AKfycbz2JjONClT3t41p4_3DMvKTilFU4DE4ZBo3y7BXek2f6ugL1W1khBVbydZEzceTUKrs/exec')
 ```
 
 Replace the placeholder with the URL from step 3.
