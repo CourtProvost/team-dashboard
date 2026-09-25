@@ -205,7 +205,8 @@
             <option>Executive Director, Communications</option>
           </datalist>
         </div>
-        <div style="flex: 0;"><button type="submit">Add</button></div>
+        <div style="flex: 0;"><button type="submit" id="roster-save-btn">Add</button></div>
+        <span class="status-msg" id="roster-save-msg"></span>
       </form>
     </details>
   </section>
@@ -529,20 +530,36 @@
     e.preventDefault();
     const nameInput = document.getElementById('r-name');
     const roleInput = document.getElementById('r-role');
+    const saveBtn = document.getElementById('roster-save-btn');
+    const saveMsg = document.getElementById('roster-save-msg');
     const name = nameInput.value.trim();
-    const role = roleInput.value;
+    const role = roleInput.value.trim();
     if (!name || !role) return;
     const id = slugify(name);
     if (state.roster.some(r => r.id === id)) { alert('That name is already on the roster.'); return; }
+
+    saveBtn.disabled = true;
+    saveMsg.textContent = 'Saving...';
     try {
       await apiPost('roster', 'save', { id, name, role });
       state.roster = await getRoster();
-    } catch (err) { console.error('Roster add error:', err); }
-    nameInput.value = '';
-    roleInput.value = '';
+      if (!state.roster.some(r => r.id === id)) {
+        // The save call did not throw, but the row is not showing up on re-fetch.
+        saveMsg.textContent = 'Saved, but the roster did not update. Check the sheet.';
+      } else {
+        saveMsg.textContent = 'Added.';
+        nameInput.value = '';
+        roleInput.value = '';
+      }
+    } catch (err) {
+      console.error('Roster add error:', err);
+      saveMsg.textContent = 'Save failed: ' + err.message;
+    }
+    saveBtn.disabled = false;
     renderRosterManage();
     renderRosterPanel();
     populateOwnerSelect();
+    setTimeout(() => { saveMsg.textContent = ''; }, 6000);
   });
 
   document.getElementById('new-meeting-btn').addEventListener('click', async () => {
